@@ -1,0 +1,80 @@
+set version 20191212.201431_builder.r1074901
+set system host-name leaf1
+set system root-authentication encrypted-password "$1$fv3Ke4LT$10nlsy3SEJy5ainm.kPTd."
+set system root-authentication ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key" 
+set system login user vagrant uid 2000
+set system login user vagrant class super-user
+set system login user vagrant authentication ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key" 
+set system services ssh root-login allow
+set system services netconf ssh 
+set system syslog user * any emergency
+set system syslog file messages any notice
+set system syslog file messages authorization info
+set system syslog file interactive-commands interactive-commands any 
+set system extensions providers juniper license-type juniper deployment-scope commercial
+set system extensions providers chef license-type juniper deployment-scope commercial
+set interfaces xe-0/0/0 description " * to spine1"
+set interfaces xe-0/0/0 unit 0 family inet address 172.16.0.1/31
+set interfaces xe-0/0/1 description " * to spine2"
+set interfaces xe-0/0/1 unit 0 family inet address 172.16.0.3/31
+set interfaces xe-0/0/2 encapsulation ethernet-bridge
+set interfaces xe-0/0/2 unit 0 family ethernet-switching vlan members vlan10
+set interfaces em0 unit 0 family inet dhcp
+set interfaces em1 unit 0 family inet address 169.254.0.2/24
+set interfaces lo0 unit 0 family inet address 1.1.1.11/32
+set policy-options policy-statement LEAF-IN term import_leaf_esi from community comm-leaf_esi
+set policy-options policy-statement LEAF-IN term import_leaf_esi then accept
+set policy-options policy-statement LEAF-IN term import_vni10 from community com10
+set policy-options policy-statement LEAF-IN term import_vni10 then accept
+set policy-options policy-statement bgp-ipclos-in term loopbacks from route-filter 1.1.0.0/16 orlonger
+set policy-options policy-statement bgp-ipclos-in term loopbacks then accept
+set policy-options policy-statement bgp-ipclos-in term server from route-filter 192.168.0.0/16 orlonger
+set policy-options policy-statement bgp-ipclos-in term server then accept
+set policy-options policy-statement bgp-ipclos-out term loopback from protocol direct
+set policy-options policy-statement bgp-ipclos-out term loopback from route-filter 1.1.1.11/32 orlonger
+set policy-options policy-statement bgp-ipclos-out term loopback then next-hop self
+set policy-options policy-statement bgp-ipclos-out term loopback then accept
+set policy-options policy-statement bgp-ipclos-out term server from protocol direct
+set policy-options policy-statement bgp-ipclos-out term server from route-filter 192.168.0.0/16 orlonger
+set policy-options policy-statement bgp-ipclos-out term server then next-hop self
+set policy-options policy-statement bgp-ipclos-out term server then accept
+set policy-options policy-statement loadbalance then load-balance per-packet
+set policy-options policy-statement pfe-ecmp then load-balance per-packet
+set policy-options policy-statement pfe-ecmp then load-balance per-packet
+set policy-options community com10 members target:1:10
+set policy-options community comm-leaf_esi members target:9999:9999
+set routing-options forwarding-table export pfe-ecmp
+set routing-options forwarding-table export loadbalance
+set routing-options router-id 1.1.1.11
+set protocols evpn vni-options vni 10 vrf-target export target:1:10
+set protocols evpn encapsulation vxlan
+set protocols evpn multicast-mode ingress-replication
+set protocols evpn extended-vni-list 10
+set protocols bgp group underlay-ipfabric type external
+set protocols bgp group underlay-ipfabric mtu-discovery
+set protocols bgp group underlay-ipfabric import bgp-ipclos-in
+set protocols bgp group underlay-ipfabric export bgp-ipclos-out
+set protocols bgp group underlay-ipfabric local-as 60011
+set protocols bgp group underlay-ipfabric multipath multiple-as
+set protocols bgp group underlay-ipfabric bfd-liveness-detection minimum-interval 350
+set protocols bgp group underlay-ipfabric bfd-liveness-detection multiplier 3
+set protocols bgp group underlay-ipfabric bfd-liveness-detection session-mode automatic
+set protocols bgp group underlay-ipfabric neighbor 172.16.0.0 peer-as 60001
+set protocols bgp group underlay-ipfabric neighbor 172.16.0.2 peer-as 60002
+set protocols bgp group overlay type internal
+set protocols bgp group overlay local-address 1.1.1.11
+set protocols bgp group overlay family evpn signaling
+set protocols bgp group overlay local-as 65700
+set protocols bgp group overlay multipath
+set protocols bgp group overlay neighbor 1.1.1.12
+set protocols bgp group overlay neighbor 1.1.1.13
+set protocols bgp log-updown
+set protocols bgp graceful-restart
+set protocols lldp interface all
+set switch-options vtep-source-interface lo0.0
+set switch-options route-distinguisher 1.1.1.11:1
+set switch-options vrf-import LEAF-IN
+set switch-options vrf-target target:9999:9999
+set vlans vlan10 vlan-id 10
+set vlans vlan10 vxlan vni 10
+set vlans vlan10 vxlan ingress-node-replication
